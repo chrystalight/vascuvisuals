@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VascuVisuals - Angiosuite Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="title">VascuVisuals Angiosuite</div>
+            <div class="status" id="status">System Ready</div>
+        </div>
+
+        <!-- Main Display Area -->
+        <div class="display-area" id="display-area">
+            <!-- Camera 1 -->
+            <div class="camera-view active-view" id="camera1-container">
+                <video id="camera1" autoplay playsinline></video>
+                <canvas id="canvas1"></canvas>
+                <div class="camera-label">Camera 1</div>
+                <div class="camera-status" id="camera1-status">Offline</div>
+            </div>
+
+            <!-- Camera 2 -->
+            <div class="camera-view" id="camera2-container">
+                <video id="camera2" autoplay playsinline></video>
+                <canvas id="canvas2"></canvas>
+                <div class="camera-label">Camera 2</div>
+                <div class="camera-status" id="camera2-status">Offline</div>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="controls">
+            <!-- View Mode -->
+            <div class="control-section">
+                <h3>Display Mode</h3>
+                <div class="view-mode-selector">
+                    <button class="btn active" data-mode="dual">Dual</button>
+                    <button class="btn" data-mode="single1">Cam 1</button>
+                    <button class="btn" data-mode="single2">Cam 2</button>
+                    <button class="btn" data-mode="pip">PIP</button>
+                </div>
+            </div>
+
+            <!-- Camera 1 Controls -->
+            <div class="control-section">
+                <h3>Camera 1</h3>
+                <div class="control-group">
+                    <button id="start-cam1" class="btn success">Start Camera 1</button>
+                    <div class="button-group">
+                        <button id="screenshot-cam1" class="btn" disabled>Screenshot</button>
+                        <button id="record-cam1" class="btn" disabled>Record</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="invert-cam1" class="btn" disabled>Invert</button>
+                        <button id="capture-ref1" class="btn" disabled>DSA Ref</button>
+                        <button id="dsa-cam1" class="btn" disabled>DSA</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 2 Controls -->
+            <div class="control-section">
+                <h3>Camera 2</h3>
+                <div class="control-group">
+                    <button id="start-cam2" class="btn success">Start Camera 2</button>
+                    <div class="button-group">
+                        <button id="screenshot-cam2" class="btn" disabled>Screenshot</button>
+                        <button id="record-cam2" class="btn" disabled>Record</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="invert-cam2" class="btn" disabled>Invert</button>
+                        <button id="capture-ref2" class="btn" disabled>DSA Ref</button>
+                        <button id="dsa-cam2" class="btn" disabled>DSA</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 1 Adjustments -->
+            <div class="control-section">
+                <h3>Camera 1 Adjustments</h3>
+                <div class="control-group">
+                    <div class="slider-control">
+                        <label>Brightness <span id="brightness1-value">0</span></label>
+                        <input type="range" id="brightness-cam1" min="-100" max="100" value="0" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Contrast <span id="contrast1-value">100</span></label>
+                        <input type="range" id="contrast-cam1" min="0" max="200" value="100" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Zoom <span id="zoom1-value">1.0x</span></label>
+                        <input type="range" id="zoom-cam1" min="1" max="4" step="0.1" value="1" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 2 Adjustments -->
+            <div class="control-section">
+                <h3>Camera 2 Adjustments</h3>
+                <div class="control-group">
+                    <div class="slider-control">
+                        <label>Brightness <span id="brightness2-value">0</span></label>
+                        <input type="range" id="brightness-cam2" min="-100" max="100" value="0" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Contrast <span id="contrast2-value">100</span></label>
+                        <input type="range" id="contrast-cam2" min="0" max="200" value="100" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Zoom <span id="zoom2-value">1.0x</span></label>
+                        <input type="range" id="zoom-cam2" min="1" max="4" step="0.1" value="1" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: #e8e8e8;
+    color: #2c3e50;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #f5f5f5;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.status {
+    font-size: 12px;
+    padding: 6px 16px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Display Area */
+.display-area {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    padding: 12px;
+    overflow: hidden;
+}
+
+.display-area.single-view .camera-view:not(.active-view) {
+    display: none;
+}
+
+.display-area.pip-view {
+    position: relative;
+}
+
+.display-area.pip-view .camera-view:first-child {
+    flex: 1;
+}
+
+.display-area.pip-view .camera-view:last-child {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 320px;
+    height: 240px;
+    flex: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.camera-view {
+    position: relative;
+    flex: 1;
+    background: #000;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 2px solid #ddd;
+}
+
+.camera-view video,
+.camera-view canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: none;
+}
+
+.camera-view video.active,
+.camera-view canvas.active {
+    display: block;
+}
+
+.camera-label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(44, 62, 80, 0.9);
+    color: white;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.camera-status {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(231, 76, 60, 0.9);
+    color: white;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.camera-status.online {
+    background: rgba(46, 204, 113, 0.9);
+}
+
+.camera-controls-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.overlay-btn {
+    background: rgba(44, 62, 80, 0.8);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+}
+
+.overlay-btn:hover {
+    background: rgba(52, 73, 94, 0.95);
+}
+
+.overlay-btn.active {
+    background: rgba(52, 152, 219, 0.9);
+}
+
+/* Controls */
+.controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border-top: 1px solid #ddd;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.control-section {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.control-section h3 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn {
+    background: white;
+    color: #2c3e50;
+    border: 1px solid #bdc3c7;
+    padding: 8px 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+
+.btn:hover:not(:disabled) {
+    background: #ecf0f1;
+    border-color: #95a5a6;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.btn.danger {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+}
+
+.btn.success {
+    background: #2ecc71;
+    color: white;
+    border-color: #2ecc71;
+}
+
+.slider-control {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.slider-control label {
+    font-size: 11px;
+    color: #7f8c8d;
+    display: flex;
+    justify-content: space-between;
+}
+
+.slider-control input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.slider-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+}
+
+.slider-control input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    border: none;
+}
+
+.button-group {
+    display: flex;
+    gap: 6px;
+}
+
+.button-group .btn {
+    flex: 1;
+    font-size: 11px;
+    padding: 6px 10px;
+}
+
+/* View mode selector */
+.view-mode-selector {
+    display: flex;
+    gap: 6px;
+    background: white;
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.view-mode-selector .btn {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .controls {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .display-area {
+        flex-direction: column;
+    }
+
+    .controls {
+        grid-template-columns: 1fr;
+        max-height: 200px;
+    }
+
+    .display-area.pip-view .camera-view:last-child {
+        width: 180px;
+        height: 135px;
+        bottom: 12px;
+        right: 12px;
+    }
+}
