@@ -50,7 +50,7 @@ class CameraController {
 
             this.isActive = true;
             this.updateStatus('Online');
-            this.video.classList.add('active');
+            this.canvas.classList.add('active');
 
             this.render();
             return true;
@@ -98,15 +98,6 @@ class CameraController {
 
     toggleDSA() {
         this.isDSAActive = !this.isDSAActive;
-
-        if (this.isDSAActive) {
-            this.canvas.classList.add('active');
-            this.video.classList.remove('active');
-        } else {
-            this.canvas.classList.remove('active');
-            this.video.classList.add('active');
-        }
-
         return this.isDSAActive;
     }
 
@@ -211,14 +202,18 @@ class CameraController {
 
         // Apply zoom
         if (this.zoom > 1) {
-            this.ctx.save();
-            const scaledWidth = width / this.zoom;
-            const scaledHeight = height / this.zoom;
-            const x = (width - scaledWidth) / 2 + this.panX;
-            const y = (height - scaledHeight) / 2 + this.panY;
+            // Calculate the cropped area from the video
+            const sourceWidth = this.video.videoWidth / this.zoom;
+            const sourceHeight = this.video.videoHeight / this.zoom;
+            const sourceX = (this.video.videoWidth - sourceWidth) / 2 + this.panX;
+            const sourceY = (this.video.videoHeight - sourceHeight) / 2 + this.panY;
 
-            this.ctx.drawImage(this.video, x, y, scaledWidth, scaledHeight, 0, 0, width, height);
-            this.ctx.restore();
+            // Draw the cropped section scaled to fill the canvas
+            this.ctx.drawImage(
+                this.video,
+                sourceX, sourceY, sourceWidth, sourceHeight,  // Source crop
+                0, 0, width, height                            // Destination (full canvas)
+            );
         } else {
             this.ctx.drawImage(this.video, 0, 0);
         }
