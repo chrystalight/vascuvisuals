@@ -24,7 +24,70 @@ class CameraController {
         this.recordedChunks = [];
         this.isRecording = false;
 
+        // Panning/dragging
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.lastPanX = 0;
+        this.lastPanY = 0;
+
         this.animationFrame = null;
+        this.setupDragListeners();
+    }
+
+    setupDragListeners() {
+        this.canvas.addEventListener('mousedown', (e) => this.onDragStart(e));
+        this.canvas.addEventListener('mousemove', (e) => this.onDragMove(e));
+        this.canvas.addEventListener('mouseup', () => this.onDragEnd());
+        this.canvas.addEventListener('mouseleave', () => this.onDragEnd());
+
+        // Touch support
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            this.onDragStart({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            this.onDragMove({ clientX: touch.clientX, clientY: touch.clientY });
+        });
+        this.canvas.addEventListener('touchend', () => this.onDragEnd());
+    }
+
+    onDragStart(e) {
+        if (this.zoom <= 1) return;
+
+        this.isDragging = true;
+        this.dragStartX = e.clientX;
+        this.dragStartY = e.clientY;
+        this.lastPanX = this.panX;
+        this.lastPanY = this.panY;
+        this.canvas.style.cursor = 'grabbing';
+    }
+
+    onDragMove(e) {
+        if (!this.isDragging || this.zoom <= 1) return;
+
+        const deltaX = e.clientX - this.dragStartX;
+        const deltaY = e.clientY - this.dragStartY;
+
+        // Scale the movement based on zoom level
+        const sensitivity = this.video.videoWidth / this.canvas.clientWidth;
+        this.panX = this.lastPanX - (deltaX * sensitivity);
+        this.panY = this.lastPanY - (deltaY * sensitivity);
+
+        // Constrain panning to prevent showing beyond image bounds
+        const maxPanX = (this.video.videoWidth - this.video.videoWidth / this.zoom) / 2;
+        const maxPanY = (this.video.videoHeight - this.video.videoHeight / this.zoom) / 2;
+
+        this.panX = Math.max(-maxPanX, Math.min(maxPanX, this.panX));
+        this.panY = Math.max(-maxPanY, Math.min(maxPanY, this.panY));
+    }
+
+    onDragEnd() {
+        this.isDragging = false;
+        this.canvas.style.cursor = this.zoom > 1 ? 'grab' : 'default';
     }
 
     async start() {
@@ -111,6 +174,15 @@ class CameraController {
 
     setZoom(value) {
         this.zoom = parseFloat(value);
+
+        // Reset pan when zoom is 1
+        if (this.zoom <= 1) {
+            this.panX = 0;
+            this.panY = 0;
+            this.canvas.style.cursor = 'default';
+        } else {
+            this.canvas.style.cursor = 'grab';
+        }
     }
 
     convertToGrayscale(imageData) {
