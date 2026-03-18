@@ -32,6 +32,8 @@ class CameraController {
         this.lastPanY = 0;
 
         this.animationFrame = null;
+        this.popoutWindow = null;
+
         this.setupDragListeners();
     }
 
@@ -91,37 +93,60 @@ class CameraController {
     }
 
     async start() {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            const deviceId = videoDevices[this.cameraId - 1]?.deviceId;
+        const delays = [0, 800, 1500]; // ms to wait before each attempt
+        let lastError;
 
-            const constraints = {
-                video: deviceId ? { deviceId: { exact: deviceId } } : true,
-                audio: false
-            };
+        for (let attempt = 0; attempt < delays.length; attempt++) {
+            if (delays[attempt] > 0) {
+                this.updateStatus(`Retrying...`);
+                await new Promise(r => setTimeout(r, delays[attempt]));
+            }
 
-            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-            this.video.srcObject = this.stream;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                const deviceId = videoDevices[this.cameraId - 1]?.deviceId;
 
-            await new Promise((resolve) => {
-                this.video.onloadedmetadata = resolve;
-            });
+                const constraint = deviceId
+                    ? { video: { deviceId: { exact: deviceId } }, audio: false }
+                    : { video: true, audio: false };
 
-            this.canvas.width = this.video.videoWidth;
-            this.canvas.height = this.video.videoHeight;
+                try {
+                    this.stream = await navigator.mediaDevices.getUserMedia(constraint);
+                } catch (e) {
+                    if (deviceId && e.name !== 'NotAllowedError') {
+                        this.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    } else {
+                        throw e;
+                    }
+                }
 
-            this.isActive = true;
-            this.updateStatus('Online');
-            this.canvas.classList.add('active');
+                this.video.srcObject = this.stream;
 
-            this.render();
-            return true;
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            this.updateStatus('Error');
-            return false;
+                await new Promise((resolve, reject) => {
+                    this.video.addEventListener('loadedmetadata', resolve, { once: true });
+                    this.video.addEventListener('error', reject, { once: true });
+                });
+
+                this.canvas.width = this.video.videoWidth;
+                this.canvas.height = this.video.videoHeight;
+
+                this.isActive = true;
+                this.updateStatus('Online');
+                this.canvas.classList.add('active');
+                this.render();
+                return true;
+
+            } catch (error) {
+                lastError = error;
+                console.warn(`Camera ${this.cameraId} attempt ${attempt + 1} failed:`, error.name, error.message);
+                if (error.name === 'NotAllowedError') break; // user denied — no point retrying
+            }
         }
+
+        console.error(`Camera ${this.cameraId} failed after all attempts:`, lastError?.name, lastError?.message);
+        this.updateStatus('Error');
+        return false;
     }
 
     stop() {
@@ -134,10 +159,86 @@ class CameraController {
         if (this.isRecording) {
             this.stopRecording();
         }
+        if (this.popoutWindow && !this.popoutWindow.closed) {
+            this.popoutWindow.close();
+            this.popoutWindow = null;
+        }
         this.isActive = false;
         this.video.classList.remove('active');
         this.canvas.classList.remove('active');
         this.updateStatus('Offline');
+    }
+
+    popout() {
+        // If a popout is already open, close it (toggle off)
+        if (this.popoutWindow && !this.popoutWindow.closed) {
+            this.popoutWindow.close();
+            this.popoutWindow = null;
+            return false;
+        }
+
+        const stream = this.canvas.captureStream(30);
+        const win = window.open('', `vascuvisuals-cam${this.cameraId}`, 'width=900,height=700');
+
+        win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VascuVisuals — Camera ${this.cameraId}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        }
+        video {
+            max-width: 100%;
+            max-height: 100vh;
+            object-fit: contain;
+        }
+        .label {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(45, 27, 61, 0.85);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="label">Camera ${this.cameraId}</div>
+    <video id="pv" autoplay playsinline muted></video>
+</body>
+</html>`);
+        win.document.close();
+
+        // Attach the stream once the window document is ready
+        win.addEventListener('load', () => {
+            const pv = win.document.getElementById('pv');
+            if (pv) pv.srcObject = stream;
+        });
+
+        // Fallback: if load already fired, set directly
+        setTimeout(() => {
+            if (win && !win.closed) {
+                const pv = win.document.getElementById('pv');
+                if (pv && !pv.srcObject) pv.srcObject = stream;
+            }
+        }, 200);
+
+        this.popoutWindow = win;
+        return true;
     }
 
     toggleInvert() {
@@ -411,6 +512,19 @@ document.getElementById('start-cam2').addEventListener('click', async function()
     }
 });
 
+// Pop Out
+document.getElementById('popout-cam1').addEventListener('click', function() {
+    const isOpen = camera1.popout();
+    this.textContent = isOpen ? 'Close Pop Out' : 'Pop Out';
+    this.classList.toggle('active', isOpen);
+});
+
+document.getElementById('popout-cam2').addEventListener('click', function() {
+    const isOpen = camera2.popout();
+    this.textContent = isOpen ? 'Close Pop Out' : 'Pop Out';
+    this.classList.toggle('active', isOpen);
+});
+
 // Screenshot and Recording
 document.getElementById('screenshot-cam1').addEventListener('click', () => camera1.takeScreenshot());
 document.getElementById('screenshot-cam2').addEventListener('click', () => camera2.takeScreenshot());
@@ -517,6 +631,7 @@ document.getElementById('zoom-cam2').addEventListener('input', function() {
 function enableCameraControls(camId) {
     document.getElementById(`screenshot-cam${camId}`).disabled = false;
     document.getElementById(`record-cam${camId}`).disabled = false;
+    document.getElementById(`popout-cam${camId}`).disabled = false;
     document.getElementById(`invert-cam${camId}`).disabled = false;
     document.getElementById(`capture-ref${camId}`).disabled = false;
     document.getElementById(`dsa-cam${camId}`).disabled = false;
@@ -528,6 +643,10 @@ function enableCameraControls(camId) {
 function disableCameraControls(camId) {
     document.getElementById(`screenshot-cam${camId}`).disabled = true;
     document.getElementById(`record-cam${camId}`).disabled = true;
+    const popoutBtn = document.getElementById(`popout-cam${camId}`);
+    popoutBtn.disabled = true;
+    popoutBtn.textContent = 'Pop Out';
+    popoutBtn.classList.remove('active');
     document.getElementById(`invert-cam${camId}`).disabled = true;
     document.getElementById(`invert-cam${camId}`).classList.remove('active');
     document.getElementById(`capture-ref${camId}`).disabled = true;
