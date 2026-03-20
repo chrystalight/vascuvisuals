@@ -1,0 +1,37 @@
+{
+  "name": "vascuvisuals",
+  "version": "1.0.0",
+  "description": "VascuVisuals Angiosuite Visualizer — desktop app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.vascuvisuals.angiosuite",
+    "productName": "VascuVisuals",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "../index.html",
+      "../style.css",
+      "../script.js"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "../brand-reference.png"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

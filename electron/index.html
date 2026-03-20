@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VascuVisuals - Angiosuite Visualizer</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .device-select {
+            width: 100%;
+            padding: 7px 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-size: 12px;
+            color: #2d1b3d;
+            background: white;
+            border: 1px solid #bdb3ab;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .device-select:hover { border-color: #7a2849; }
+        .device-select:focus { outline: none; border-color: #7a2849; }
+
+        /* Dual fullscreen layout */
+        .display-area:fullscreen {
+            display: flex;
+            flex-direction: row;
+            gap: 4px;
+            padding: 0;
+            background: #000;
+        }
+        .display-area:fullscreen .camera-view {
+            border-radius: 0;
+            border: none;
+            flex: 1;
+        }
+
+        /*
+         * Bottom hover zone — invisible tall strip at the bottom of the
+         * fullscreen area. Hovering it reveals the control bar.
+         */
+        .fs-hover-zone {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 110px;   /* how far up you need to move the mouse */
+            z-index: 30;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 18px;
+        }
+        .display-area:fullscreen .fs-hover-zone {
+            display: flex;
+        }
+
+        /* The visible bar, fades in when the hover zone is hovered */
+        .fs-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(15, 8, 25, 0.82);
+            backdrop-filter: blur(8px);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            opacity: 0;
+            transition: opacity 0.22s;
+            pointer-events: none;
+        }
+        .fs-hover-zone:hover .fs-bar {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .fs-bar-btn {
+            background: rgba(255,255,255,0.12);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 7px 16px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            cursor: pointer;
+            transition: background 0.18s;
+            white-space: nowrap;
+        }
+        .fs-bar-btn:hover { background: rgba(94,154,154,0.75); }
+        .fs-bar-btn.recording { background: rgba(122,40,73,0.85); }
+        .fs-bar-btn.exit:hover { background: rgba(180,50,50,0.8); }
+
+        .fs-bar-divider {
+            width: 1px;
+            height: 28px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 4px;
+        }
+
+        .fs-bar-label {
+            color: rgba(255,255,255,0.45);
+            font-size: 11px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            letter-spacing: 0.4px;
+            margin-right: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="title">VascuVisuals Angiosuite</div>
+            <div class="status" id="status">System Ready</div>
+        </div>
+
+        <!-- Main Display Area -->
+        <div class="display-area" id="display-area">
+
+            <!-- Camera 1 -->
+            <div class="camera-view active-view" id="camera1-container">
+                <video id="camera1" autoplay playsinline></video>
+                <canvas id="canvas1"></canvas>
+                <div class="camera-label">Camera 1</div>
+                <div class="camera-status" id="camera1-status">Offline</div>
+            </div>
+
+            <!-- Camera 2 -->
+            <div class="camera-view" id="camera2-container">
+                <video id="camera2" autoplay playsinline></video>
+                <canvas id="canvas2"></canvas>
+                <div class="camera-label">Camera 2</div>
+                <div class="camera-status" id="camera2-status">Offline</div>
+            </div>
+
+            <!-- Bottom hover zone (only visible in fullscreen) -->
+            <div class="fs-hover-zone" id="fs-hover-zone">
+                <div class="fs-bar">
+                    <span class="fs-bar-label">CAM 1</span>
+                    <button class="fs-bar-btn" id="fs-screenshot-cam1">Screenshot</button>
+                    <button class="fs-bar-btn" id="fs-record-cam1">Record</button>
+                    <div class="fs-bar-divider"></div>
+                    <span class="fs-bar-label">CAM 2</span>
+                    <button class="fs-bar-btn" id="fs-screenshot-cam2">Screenshot</button>
+                    <button class="fs-bar-btn" id="fs-record-cam2">Record</button>
+                    <div class="fs-bar-divider"></div>
+                    <button class="fs-bar-btn exit" id="fs-exit">✕ Exit</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Control Panel -->
+        <div class="controls">
+            <!-- View Mode -->
+            <div class="control-section">
+                <h3>Display Mode</h3>
+                <div class="view-mode-selector">
+                    <button class="btn active" data-mode="dual">Dual</button>
+                    <button class="btn" data-mode="single1">Cam 1</button>
+                    <button class="btn" data-mode="single2">Cam 2</button>
+                    <button class="btn" data-mode="pip">PIP</button>
+                </div>
+                <button id="fs-both" class="btn" style="margin-top:6px;">⛶ Fullscreen</button>
+            </div>
+
+            <!-- Camera 1 Controls -->
+            <div class="control-section">
+                <h3>Camera 1</h3>
+                <div class="control-group">
+                    <select id="device-select-cam1" class="device-select"></select>
+                    <button id="start-cam1" class="btn success">Start Camera 1</button>
+                    <div class="button-group">
+                        <button id="screenshot-cam1" class="btn" disabled>Screenshot</button>
+                        <button id="record-cam1" class="btn" disabled>Record</button>
+                        <button id="popout-cam1" class="btn" disabled>Pop Out</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="invert-cam1" class="btn" disabled>Invert</button>
+                        <button id="capture-ref1" class="btn" disabled>DSA Ref</button>
+                        <button id="dsa-cam1" class="btn" disabled>DSA</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 2 Controls -->
+            <div class="control-section">
+                <h3>Camera 2</h3>
+                <div class="control-group">
+                    <select id="device-select-cam2" class="device-select"></select>
+                    <button id="start-cam2" class="btn success">Start Camera 2</button>
+                    <div class="button-group">
+                        <button id="screenshot-cam2" class="btn" disabled>Screenshot</button>
+                        <button id="record-cam2" class="btn" disabled>Record</button>
+                        <button id="popout-cam2" class="btn" disabled>Pop Out</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="invert-cam2" class="btn" disabled>Invert</button>
+                        <button id="capture-ref2" class="btn" disabled>DSA Ref</button>
+                        <button id="dsa-cam2" class="btn" disabled>DSA</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 1 Adjustments -->
+            <div class="control-section">
+                <h3>Camera 1 Adjustments</h3>
+                <div class="control-group">
+                    <div class="slider-control">
+                        <label>Brightness <span id="brightness1-value">0</span></label>
+                        <input type="range" id="brightness-cam1" min="-100" max="100" value="0" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Contrast <span id="contrast1-value">100</span></label>
+                        <input type="range" id="contrast-cam1" min="0" max="200" value="100" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Zoom <span id="zoom1-value">1.0x</span></label>
+                        <input type="range" id="zoom-cam1" min="1" max="4" step="0.1" value="1" disabled>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 2 Adjustments -->
+            <div class="control-section">
+                <h3>Camera 2 Adjustments</h3>
+                <div class="control-group">
+                    <div class="slider-control">
+                        <label>Brightness <span id="brightness2-value">0</span></label>
+                        <input type="range" id="brightness-cam2" min="-100" max="100" value="0" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Contrast <span id="contrast2-value">100</span></label>
+                        <input type="range" id="contrast-cam2" min="0" max="200" value="100" disabled>
+                    </div>
+                    <div class="slider-control">
+                        <label>Zoom <span id="zoom2-value">1.0x</span></label>
+                        <input type="range" id="zoom-cam2" min="1" max="4" step="0.1" value="1" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
